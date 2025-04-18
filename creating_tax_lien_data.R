@@ -22,7 +22,9 @@ sf_use_s2(FALSE)
 
 ### Load in the SDAT data and turn it into cleaned property information
 
-layout<-read_csv("~/Desktop/banner_projects/real_estate/layout.csv") %>% 
+layout<-
+  read_csv("~/Desktop/banner_projects/real_estate/layout.csv") %>% # csv not in repository
+  
   mutate(last = str_split(POSITIONS, "-") %>% 
            lapply(function(x)
              return(
@@ -36,10 +38,15 @@ layout<-read_csv("~/Desktop/banner_projects/real_estate/layout.csv") %>%
              )
            ) %>% unlist %>% as.numeric
          
-  ) %>% tail(nrow(.)-1) %>% 
+  ) %>% 
+  
+  tail(nrow(.)-1) %>% 
+  
   mutate(SIZE = replace_na(SIZE,0),
          last = replace_na(last,0)) %>% 
-  add_column(check = cumsum(.$SIZE)) %>% filter(first!=0, last!=0)
+  
+  add_column(check = cumsum(.$SIZE)) %>%
+  filter(first!=0, last!=0)
 
 stem <- "~/Desktop/banner_projects/real_estate/ban-real/"
 list_of_counties <- list.files(stem) %>% str_remove_all(".zip") %>% unique
@@ -52,87 +59,163 @@ for(i in 1:length(list_of_counties)){
   list_of_files[[i]]<-read_fwf(str_c(stem,list_of_counties[i],"/", root), 
                                fwf_positions(start = c(layout$first), end = c(layout$last), col_names =layout$DATA )) %>% 
     select(
-      county_code = "County Code", district_ward = "District/Ward...2", map = Map,section = "Section", block = "Block", lot = "Lot", parcel="Parcel",
-      owner_occ_code = "Owner Occupancy Code", owner = "Owner's Name", owner_2 = "Owner's Name 2nd Line",
-      owner_name_key = "Name Key", addr = "PO Box/Street Address", addr_2 = "Address 2nd Line", number = "Number", 
-      number_suff = "Number Suffix", direction = "Direction", addr_name = "Name", name_type = "Type", city = "City...25", state ="State Code",
-      zip =  "Zip Code...26", legal_desc_1 = "Legal Description Line 1", legal_desc_2 = "Legal Description Line 2",
-      legal_desc_3 = "Legal Description Line 3", condo_num = `Condominium Unit No.`, 
-      
+      county_code = "County Code",
+      district_ward = "District/Ward...2",
+      map = Map,section = "Section",
+      block = "Block",
+      lot = "Lot",
+      parcel="Parcel",
+      owner_occ_code = "Owner Occupancy Code",
+      owner = "Owner's Name",
+      owner_2 = "Owner's Name 2nd Line",
+      owner_name_key = "Name Key",
+      addr = "PO Box/Street Address",
+      addr_2 = "Address 2nd Line",
+      number = "Number", 
+      number_suff = "Number Suffix",
+      direction = "Direction",
+      addr_name = "Name",
+      name_type = "Type",
+      city = "City...25",
+      state ="State Code",
+      zip =  "Zip Code...26",
+      legal_desc_1 = "Legal Description Line 1",
+      legal_desc_2 = "Legal Description Line 2",
+      legal_desc_3 = "Legal Description Line 3",
+      condo_num = "Condominium Unit No.", 
       account_num =  "Account Number...3",
-      
       exempt_class = "Exempt Class", 
-      land_use =  "Land Use Code", public_use_code = `BPRUC (Public Use Code)`, utilities_water =  `Utilities - Water`, 
+      land_use =  "Land Use Code",
+      public_use_code = `BPRUC (Public Use Code)`,
+      utilities_water =  `Utilities - Water`, 
       utilities_sewer = `Utilities - Sewer`, 
-      
-      grantor_1 = "Grantor Name...79", sales_type_1 = "How Conveyed Ind....86", 
-      sales_date_1 ="Transfer Date (MMDDCCYY)...88", sales_price_1 = "Consideration...89",total_partial_1 = "Total/Partial Ind....87",
-      mortgage_1 = "Mortgage...91",market_improve_1="Mkt Improvement Value...94", 
-      
-      grantor_2 ="Grantor Name...98", sales_type_2 = "How Conveyed Ind....105", 
-      sales_date_2 ="Transfer Date (MMDDCCYY)...107", sales_price_2= "Consideration...108",total_partial_2 = "Total/Partial Ind....106",
-      mortgage_2 = "Mortgage...110",market_improve_2 = "Mkt Improvement Value...114", market_land_2 = "Mkt Land Value...113",
-      
-      grantor_3 ="Grantor Name...118", sales_type_3 = "How Conveyed Ind....125", 
-      sales_date_3 ="Transfer Date (MMDDCCYY)...127", sales_price_3= "Consideration...128",total_partial_3 = "Total/Partial Ind....126",
-      mortgage_23 = "Mortgage...130",market_improve_3 = "Mkt Improvement Value...134", market_land_3 = "Mkt Land Value...133",
-      
-      county_exempt = "County Exempt Class",state_exempt="State Exempt Class", state_assess_exempt = "State Exempt Assessment", 
-      municipal_exempt ="Municipal Exempt Class", municipal_exempt_assess = "Municipal Exempt Assessment",
-      
-      land_value = "Land Value...151", improvements_value = "Improvements Value...152", pref_land_value = "Preferential Land Value...153",
-      date_assessed = "Date Assessed (MMCCYY)...155", date_inspected = "Date Inspected (MMCCYY)...156", tot_assess = "Total Assessment...158",
-      
-      land_value_2 = "Land Value...161", improvements_value_2 = "Improvements Value...162", pref_land_value_2 = "Preferential Land Value...163",
-      date_assessed_2 = "Date Assessed (MMCCYY)...166", date_inspected_2 = "Date Inspected (MMCCYY)...165", tot_assess_2 = "Total Assessment...169",
-      
-      land_value_3 = "Land Value...174", improvements_value_3 = "Improvements Value...175", pref_land_value_3 = "Preferential Land Value...176",
-      date_assessed_3 = "Date Assessed (MMCCYY)...166", date_inspected_3 = "Date Inspected (MMCCYY)...165", tot_assess_3 = "Total Assessment...178",
-      
-      year_build ="Year Built (CCYY)" , num_stories = "Number of Stories", structure_area = "Structure Area (Sq.Ft.)", land_area = "Land Area",
+      grantor_1 = "Grantor Name...79",
+      sales_type_1 = "How Conveyed Ind....86", 
+      sales_date_1 ="Transfer Date (MMDDCCYY)...88",
+      sales_price_1 = "Consideration...89",
+      total_partial_1 = "Total/Partial Ind....87",
+      mortgage_1 = "Mortgage...91",
+      market_improve_1="Mkt Improvement Value...94", 
+      grantor_2 ="Grantor Name...98",
+      sales_type_2 = "How Conveyed Ind....105", 
+      sales_date_2 ="Transfer Date (MMDDCCYY)...107",
+      sales_price_2= "Consideration...108",
+      total_partial_2 = "Total/Partial Ind....106",
+      mortgage_2 = "Mortgage...110",
+      market_improve_2 = "Mkt Improvement Value...114",
+      market_land_2 = "Mkt Land Value...113",
+      grantor_3 ="Grantor Name...118",
+      sales_type_3 = "How Conveyed Ind....125", 
+      sales_date_3 ="Transfer Date (MMDDCCYY)...127",
+      sales_price_3= "Consideration...128",
+      total_partial_3 = "Total/Partial Ind....126",
+      mortgage_23 = "Mortgage...130",
+      market_improve_3 = "Mkt Improvement Value...134",
+      market_land_3 = "Mkt Land Value...133",
+      county_exempt = "County Exempt Class",
+      state_exempt="State Exempt Class",
+      state_assess_exempt = "State Exempt Assessment", 
+      municipal_exempt ="Municipal Exempt Class",
+      municipal_exempt_assess = "Municipal Exempt Assessment",
+      land_value = "Land Value...151",
+      improvements_value = "Improvements Value...152",
+      pref_land_value = "Preferential Land Value...153",
+      date_assessed = "Date Assessed (MMCCYY)...155",
+      date_inspected = "Date Inspected (MMCCYY)...156",
+      tot_assess = "Total Assessment...158",
+      land_value_2 = "Land Value...161", 
+      improvements_value_2 = "Improvements Value...162",
+      pref_land_value_2 = "Preferential Land Value...163",
+      date_assessed_2 = "Date Assessed (MMCCYY)...166",
+      date_inspected_2 = "Date Inspected (MMCCYY)...165",
+      tot_assess_2 = "Total Assessment...169",
+      land_value_3 = "Land Value...174",
+      improvements_value_3 = "Improvements Value...175",
+      pref_land_value_3 = "Preferential Land Value...176",
+      date_assessed_3 = "Date Assessed (MMCCYY)...166",
+      date_inspected_3 = "Date Inspected (MMCCYY)...165",
+      tot_assess_3 = "Total Assessment...178",
+      year_build ="Year Built (CCYY)",
+      num_stories = "Number of Stories",
+      structure_area = "Structure Area (Sq.Ft.)",
+      land_area = "Land Area",
       land_units = "Land Unit of Measure",
-      
-      homestead_qual_code = "Homestead Qualification Code", homstead_qual_date = "Homestead Qualification Date"
-      
+      homestead_qual_code = "Homestead Qualification Code",
+      homstead_qual_date = "Homestead Qualification Date"
     )
 }
 
 D_list <- do.call("rbind", list_of_files)
+
 ##write out an intermediate file
 D_list %>% fwrite("~/Desktop/banner_projects/real_estate/property_transfer_list.csv")
 
 #read the data back in. don't technically do the code above.
-
 D_list_dt<-fread("~/Desktop/banner_projects/real_estate/property_transfer_list.csv") %>% 
   mutate(district_ward = district_ward %>% as.character(),
          id = 1:nrow(.))
 
-##read in the property shapefiles for the city from the city's website. 
-
+#read in the property shapefiles for the city from the city's website. 
 balt_prop_shp<-read_sf("~/Desktop/banner_projects/real_estate/Real_Property_Information/Real_Property_Information.shp")
+
 balt_prop_shp_dt<-balt_prop_shp %>% data.table
 
-balt_prop_shp_dt<-balt_prop_shp_dt %>% add_column(id_city = 1:nrow(.))%>%
-  mutate(ward_2 = WARD, lot_2=LOT, block_2=BLOCK, WARD = as.numeric(WARD) %>%  as.character())
+balt_prop_shp_dt <-
+  balt_prop_shp_dt %>%
+  add_column(id_city = 1:nrow(.)) %>%
+  mutate(ward_2 = WARD,
+         lot_2=LOT,
+         block_2=BLOCK,
+         WARD = as.numeric(WARD) %>%  as.character())
 
 ### This is the data that came from the city on the property liens since 2016
-D_liened <- read_csv("~/Desktop/banner_projects/tax_lien/liened_houses.csv")
+D_liened <- read_csv("~/Desktop/banner_projects/tax_lien/liened_houses.csv") # csv not in repository
 
 ### We take this file and send it into Geocodio. This isn't stricly necessary because we use the shapefiles from the city to give the home locations, but i did it
 ### anyways 
-D_liened_properties_bmore <-read_csv("~/Desktop/banner_projects/real_estate/to_geocode_geocodio_941c27214136de1ff6926593c0199ef1a8a63d58.csv") %>% 
+D_liened_properties_bmore <-
+  read_csv("~/Desktop/banner_projects/real_estate/to_geocode_geocodio_941c27214136de1ff6926593c0199ef1a8a63d58.csv") %>% 
   mutate(sale_date = mdy(`SALE-DATE`), property_address = `PROPERTY-ADDRESS`, 
          owner_name = `OWNER-NAME`, owner_addr = `OWNER-ADDRESS`, total_liens = `TOTAL-LIENS`,amt_bid=`AMT-BID`,
          bidder_type = `BIDDER-TYPE`, bidder_name = `BIDDER-NAME`, bidder_addr = `BIDDER-ADDR`,
          bidder_city=`BIDDER-CITY`, bidder_state = `BIDDER-STATE`, redemption = REDEMPTION %>% tolower,
          redem_date = ymd(`REDEM-DATE`), dd_date = ymd(`DD-DATE`), forcl_name = `FORECL-NAME`,
          forcl_desc = `FORECL-DESC`, forcl_date = `FORECL-DATE`) %>% 
-  select(property_address,sale_date, owner_name, owner_addr, total_liens,amt_bid,bidder_type, bidder_name,bidder_addr, bidder_city,bidder_state,
-         redemption, redem_date, dd_date, forcl_name, forcl_desc,forcl_date,latitude = Latitude, longitude = Longitude,  number= Number, 
+  select(property_address,
+         sale_date,
+         owner_name,
+         owner_addr,
+         total_liens,
+         amt_bid,
+         bidder_type,
+         bidder_name,
+         bidder_addr,
+         bidder_city,
+         bidder_state,
+         redemption,
+         redem_date,
+         dd_date,
+         forcl_name,
+         forcl_desc,
+         forcl_date,
+         latitude = Latitude,
+         longitude = Longitude,
+         number= Number,
          accuracy = `Accuracy Score`,
-         street= Street,unit_type = "Unit Type", unit_number = "Unit Number", city = City) %>% 
-  mutate(bidder_name = bidder_name %>% str_remove_all(",") %>% str_remove_all("[0-9]") %>%  tolower) %>% add_column(id = 1:nrow(.)) %>% 
-  as.data.table() %>% mutate(addr = str_c(number," ", street) %>% toupper)
+         street= Street,
+         unit_type = "Unit Type",
+         unit_number = "Unit Number",
+         city = City) %>% 
+  mutate(bidder_name = 
+           bidder_name %>%
+           str_remove_all(",") %>%
+           str_remove_all("[0-9]") %>%
+           tolower) %>%
+  add_column(id = 1:nrow(.)) %>% 
+  as.data.table() %>%
+  mutate(addr =
+           str_c(number," ", street) %>%
+           toupper)
 
 #write this out to a file that goes into the Rmd
 write_csv(D_liened_properties_bmore, "~/Desktop/banner_projects/real_estate/liened_properties_cleaned.csv")
@@ -142,19 +225,50 @@ write_csv(D_liened_properties_bmore, "~/Desktop/banner_projects/real_estate/lien
 #filter the SDAT data to baltimore and join the SDAT records with the city's property shapefiles. This match is almost perfect, but just to make sure that it is 
 #I include some checking code here.
 
-j_city_state_data<-D_list_dt[city=="BALTIMORE"][ balt_prop_shp_dt, on = .(lot=LOT, block=BLOCK,district_ward=WARD)]
+j_city_state_data <- 
+  D_list_dt[city == "BALTIMORE"][ balt_prop_shp_dt, on = .(lot=LOT, block=BLOCK,district_ward=WARD)]
 
 
-id_matched_city<-j_city_state_data %>% filter(is.na(county_code)==FALSE) %>% pull(id_city)
-id_matched_sdat<-j_city_state_data %>% filter(is.na(county_code)==FALSE) %>% pull(id)
+id_matched_city <- 
+  j_city_state_data %>%
+  filter(is.na(county_code)==FALSE) %>%
+  pull(id_city)
 
-city_missing<-balt_prop_shp_dt %>% filter(id_city%in%id_matched_city==FALSE)
-sdat_missing<-D_list_dt%>% filter(county_code==3) %>% filter(id%in%id_matched_sdat==FALSE)
+id_matched_sdat <-
+  j_city_state_data %>%
+  filter(is.na(county_code)==FALSE) %>%
+  pull(id)
 
-last_matched<-sdat_missing %>% left_join(city_missing, by = c("lot"="LOT", "block"="BLOCK")) %>% filter(is.na(county_code)==FALSE)
-id_keep<-last_matched %>% group_by(id) %>% summarise(n = n())  %>% filter(n==1) %>% pull(id)
-id_city_keep<-last_matched %>% group_by(id_city) %>% summarise(n = n())  %>% filter(n==1) %>% pull(id_city)
-last_matched_f<-last_matched %>% filter(id%in%id_keep, id_city%in%id_city_keep)
+city_missing <-
+  balt_prop_shp_dt %>%
+  filter(id_city %in% id_matched_city == FALSE)
+
+sdat_missing <-
+  D_list_dt %>% 
+  filter(county_code == 3) %>%
+  filter(id %in% id_matched_sdat == FALSE)
+
+last_matched <- sdat_missing %>%
+  left_join(city_missing, by = c("lot"="LOT", "block"="BLOCK")) %>%
+  filter(is.na(county_code)==FALSE)
+
+id_keep <-
+  last_matched %>%
+  group_by(id) %>%
+  summarise(n = n()) %>%
+  filter(n==1) %>%
+  pull(id)
+
+id_city_keep <-
+  last_matched %>% 
+  group_by(id_city) %>%
+  summarise(n = n()) %>%
+  filter(n==1) %>% 
+  pull(id_city)
+
+last_matched_f <- 
+  last_matched %>%
+  filter(id %in% id_keep, id_city %in% id_city_keep)
 
 j_city_state_data_f<-rbind(last_matched_f %>% select(-WARD,-ward_2, -lot_2, -block_2), 
                            j_city_state_data %>% filter(is.na(county_code)==FALSE) %>%  select(-ward_2, -lot_2, -block_2)) 
