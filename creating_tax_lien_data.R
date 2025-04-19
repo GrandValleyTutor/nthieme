@@ -270,135 +270,264 @@ last_matched_f <-
   last_matched %>%
   filter(id %in% id_keep, id_city %in% id_city_keep)
 
-j_city_state_data_f<-rbind(last_matched_f %>% select(-WARD,-ward_2, -lot_2, -block_2), 
-                           j_city_state_data %>% filter(is.na(county_code)==FALSE) %>%  select(-ward_2, -lot_2, -block_2)) 
+j_city_state_data_f <-
+  rbind(last_matched_f %>%
+          select(-WARD,-ward_2, -lot_2, -block_2),
+        j_city_state_data %>%
+          filter(is.na(county_code)==FALSE) %>%
+          select(-ward_2, -lot_2, -block_2)
+        ) 
 
 #now standardize the address for the sdat + bmore shape data
 
-j_city_state_data_f_2<-j_city_state_data_f %>%as.data.frame %>%  filter(is.na(FULLADDR)==FALSE) %>%
-  mutate(FULLADDR = case_when(is.na(UNIT_NUM)==FALSE~str_c(FULLADDR, " UNIT: ",UNIT_NUM),
-                              is.na(UNIT_NUM)~FULLADDR
-  )
-  ) %>%  pm_identify(var = "FULLADDR")
+j_city_state_data_f_2 <-
+  j_city_state_data_f %>%
+  as.data.frame %>%
+  filter(is.na(FULLADDR)==FALSE) %>%
+  mutate(FULLADDR = case_when(is.na(UNIT_NUM) == FALSE ~ str_c(FULLADDR,
+                                                               " UNIT: ",
+                                                               UNIT_NUM),
+                              is.na(UNIT_NUM) ~ FULLADDR)) %>%  
+  pm_identify(var = "FULLADDR")
 
-D_postmast_addr_sdat<-j_city_state_data_f_2%>% pm_prep(var = "FULLADDR", type = "street") 
+D_postmast_addr_sdat <-
+  j_city_state_data_f_2 %>%
+  pm_prep(var = "FULLADDR",
+          type = "street") 
 
-D_postmast_addr_sdat_2_unit<-D_postmast_addr_sdat %>% 
-  pm_house_parse() %>% pm_unit_parse() %>% select(pm.uid, pm.unit)
+D_postmast_addr_sdat_2_unit <-
+  D_postmast_addr_sdat %>% 
+  pm_house_parse() %>%
+  pm_unit_parse() %>%
+  select(pm.uid, pm.unit)
 
-dirsDict <- pm_dictionary(type = "directional", locale = "us")
+dirsDict <-
+  pm_dictionary(type = "directional",
+                locale = "us")
 
-D_postmast_addr_sdat_2_f<-D_postmast_addr_sdat %>% 
+D_postmast_addr_sdat_2_f <-
+  D_postmast_addr_sdat %>% 
   pm_house_parse() %>% 
   pm_unit_parse() %>% 
   pm_streetDir_parse(dictionary = dirsDict) %>%
   pm_streetSuf_parse()%>%
-  filter(is.na(pm.house)==FALSE,is.na(pm.address)==FALSE)
+  filter(is.na(pm.house) == FALSE,
+         is.na(pm.address) == FALSE)
 
-D_postmast_addr_sdat_3<-D_postmast_addr_sdat_2_f %>% left_join(D_postmast_addr_sdat_2_unit)%>%
-  mutate(pm.house = pm.house %>% str_remove(., "^0+") %>% str_remove(., ">"))%>% 
-  mutate(pm.house=str_split(pm.house,"-") %>% lapply(function(x)return(x[1])) %>% unlist,
-         pm.preDir=replace_na(pm.preDir,""),
-         pm.streetSuf=replace_na(pm.streetSuf,""),
-         pm.sufDir=replace_na(pm.sufDir,""),
-         pm.unit=replace_na(pm.unit,""),
-         pm.addr.full = str_c(pm.house, " ",pm.preDir, " ",pm.address," ", pm.streetSuf, " ", pm.sufDir," ",pm.unit) %>% trimws %>% 
-           str_replace("  "," ") %>% str_replace("  "," ") %>% tolower) %>% select(pm.uid,pm.addr.full)
+D_postmast_addr_sdat_3 <-
+  D_postmast_addr_sdat_2_f %>%
+  left_join(D_postmast_addr_sdat_2_unit)%>%
+  mutate(pm.house = pm.house %>%
+           str_remove(., "^0+") %>%
+           str_remove(., ">")) %>% 
+  mutate(pm.house = str_split(pm.house,"-") %>%
+           lapply(function(x)return(x[1])) %>%
+           unlist,
+         pm.preDir = replace_na(pm.preDir,""),
+         pm.streetSuf = replace_na(pm.streetSuf,""),
+         pm.sufDir = replace_na(pm.sufDir,""),
+         pm.unit = replace_na(pm.unit,""),
+         pm.addr.full = 
+           str_c(pm.house, " ",pm.preDir, " ",pm.address," ", pm.streetSuf, " ", pm.sufDir," ",pm.unit) %>%
+           trimws %>% 
+           str_replace("  "," ") %>%
+           str_replace("  "," ") %>%
+           tolower) %>%
+  select(pm.uid,pm.addr.full)
 
-j_city_state_data_f_3<-j_city_state_data_f_2 %>% left_join(D_postmast_addr_sdat_3, by = "pm.uid") %>% select(-pm.id,-pm.uid, -pm.type)%>% 
-  filter(is.na(FULLADDR)==FALSE)  %>% as.data.frame%>% mutate(pm.addr.full.sdat = pm.addr.full)
+j_city_state_data_f_3 <-
+  j_city_state_data_f_2 %>%
+  left_join(D_postmast_addr_sdat_3, by = "pm.uid") %>%
+  select(-pm.id,-pm.uid, -pm.type) %>% 
+  filter(is.na(FULLADDR)==FALSE) %>%
+  as.data.frame %>%
+  mutate(pm.addr.full.sdat = pm.addr.full)
 
 # j_city_state_data %>% st_as_sf %>%  ggplot()+geom_sf()
 
-j_city_state_data_sf<-j_city_state_data_f_3 %>% st_as_sf 
+j_city_state_data_sf <-
+  j_city_state_data_f_3 %>% st_as_sf 
 
-st_write(j_city_state_data_sf, "~/Desktop/banner_projects/real_estate/fixed_parcel_data.shp", binary = T, delete_dsn = T)
+st_write(j_city_state_data_sf,
+         "~/Desktop/banner_projects/real_estate/fixed_parcel_data.shp",
+         binary = T,
+         delete_dsn = T)
 
-write_csv(tibble(names(j_city_state_data_sf)),"~/Desktop/banner_projects/real_estate/fixed_parcel_names.csv" )
+write_csv(tibble(names(j_city_state_data_sf)),
+          "~/Desktop/banner_projects/real_estate/fixed_parcel_names.csv" )
 
 ### next we use postmaster to standardize the addressess between sdat data and the property liens data to be able to match liens with their property addresses
 ##this can be used to link the property shapefiles with the liened properties by connecting the SDAT components from fixed_parcel_data with the SDAT components 
 ##from matched_liens_sdat_2.csv
 
 #this file is written out earlier but i'm reading it back in because that line is commeted out 
-D_liened_properties_bmore<-read_csv("~/Desktop/banner_projects/real_estate/liened_properties_cleaned.csv")
+D_liened_properties_bmore <-
+  read_csv("~/Desktop/banner_projects/real_estate/liened_properties_cleaned.csv")
 
 #use postmastr to standerdize the addresses from the liened properties data 
-D_liened_properties_bmore_sf_2<-D_liened_properties_bmore %>% pm_identify(var = "property_address")
+D_liened_properties_bmore_sf_2 <-
+  D_liened_properties_bmore %>%
+  pm_identify(var = "property_address")
 
-D_postmast_addr<-D_liened_properties_bmore_sf_2%>% pm_prep(var = "property_address", type = "street") 
-dirsDict <- pm_dictionary(type = "directional", locale = "us")
+D_postmast_addr <-
+  D_liened_properties_bmore_sf_2 %>%
+  pm_prep(var = "property_address", type = "street") 
 
-D_postmast_addr_2_unit<-D_postmast_addr %>% 
-  pm_house_parse() %>% pm_unit_parse() %>% select(pm.uid, pm.unit)
+dirsDict <-
+  pm_dictionary(type = "directional", locale = "us")
+
+D_postmast_addr_2_unit <-
+  D_postmast_addr %>% 
+  pm_house_parse() %>%
+  pm_unit_parse() %>%
+  select(pm.uid, pm.unit)
 
 D_postmast_addr_2_f<-D_postmast_addr %>% 
   pm_house_parse() %>% 
   pm_unit_parse() %>% 
   pm_streetDir_parse(dictionary = dirsDict) %>%
-  pm_streetSuf_parse()%>%
-  filter(is.na(pm.house)==FALSE,is.na(pm.address)==FALSE)
+  pm_streetSuf_parse() %>%
+  filter(is.na(pm.house) == FALSE,
+         is.na(pm.address) == FALSE)
 
-D_postmast_addr_3<-D_postmast_addr_2_f %>% left_join(D_postmast_addr_2_unit)%>%
-  mutate(pm.house = pm.house %>% str_remove(., "^0+") %>% str_remove(., ">"))%>% 
-  mutate(pm.house=str_split(pm.house,"-") %>% lapply(function(x)return(x[1])) %>% unlist,
-         pm.preDir=replace_na(pm.preDir,""),
-         pm.streetSuf=replace_na(pm.streetSuf,""),
-         pm.sufDir=replace_na(pm.sufDir,""),
-         pm.unit=replace_na(pm.unit,""),
-         pm.addr.full = str_c(pm.house, " ",pm.preDir, " ",pm.address," ", pm.streetSuf, " ", pm.sufDir," ",pm.unit) %>% trimws %>% 
-           str_replace("  "," ") %>% str_replace("  "," ") %>% tolower) %>% select(pm.uid,pm.addr.full)
+D_postmast_addr_3 <- 
+  D_postmast_addr_2_f %>%
+  left_join(D_postmast_addr_2_unit)%>%
+  mutate(pm.house = pm.house %>%
+           str_remove(., "^0+") %>%
+           str_remove(., ">")) %>% 
+  mutate(pm.house = str_split(pm.house,"-") %>%
+           lapply(function(x)return(x[1])) %>%
+           unlist,
+         pm.preDir = replace_na(pm.preDir,""),
+         pm.streetSuf = replace_na(pm.streetSuf,""),
+         pm.sufDir = replace_na(pm.sufDir,""),
+         pm.unit = replace_na(pm.unit,""),
+         pm.addr.full = 
+           str_c(pm.house, " ",pm.preDir, " ",pm.address," ", pm.streetSuf, " ", pm.sufDir," ",pm.unit) %>%
+           trimws %>% 
+           str_replace("  "," ") %>%
+           str_replace("  "," ") %>%
+           tolower) %>%
+  select(pm.uid,pm.addr.full)
 
-D_liened_properties_bmore_sf_3<-D_liened_properties_bmore_sf_2 %>% left_join(D_postmast_addr_3, by = "pm.uid") %>% 
-  select(-pm.id,-pm.uid, -pm.type)%>% add_column(id_lien = 1:nrow(.)) %>% as.data.frame
+D_liened_properties_bmore_sf_3 <-
+  D_liened_properties_bmore_sf_2 %>%
+  left_join(D_postmast_addr_3, by = "pm.uid") %>% 
+  select(-pm.id,-pm.uid, -pm.type) %>%
+  add_column(id_lien = 1:nrow(.)) %>%
+  as.data.frame
 
 ##now we do the same thing with the sdat data that has the shapes included. i'm also reading this back in, despite it being written out above, because it's 
 ##commented out there als. because of the way writing shapefiles can change names, i write out a name file that includes the wright names for the variables as well
 
-j_city_state_data_sf<-st_read("~/Desktop/banner_projects/real_estate/fixed_parcel_data.shp")
-name_file <- read_csv("~/Desktop/banner_projects/real_estate/fixed_parcel_names.csv") #got it
-name_file[nrow(name_file),]$.<-"geometry"
-name_file[nrow(name_file)-1,]$.<-"id_city"
-names(j_city_state_data_sf)<-name_file$.
+j_city_state_data_sf <-
+  st_read("~/Desktop/banner_projects/real_estate/fixed_parcel_data.shp")
+
+name_file <-
+  read_csv("~/Desktop/banner_projects/real_estate/fixed_parcel_names.csv") #got it
+
+name_file[nrow(name_file),]$. <- "geometry"
+
+name_file[nrow(name_file)-1,]$. <- "id_city"
+
+names(j_city_state_data_sf) <- name_file$.
 
 
 ##after standardizing these addresses, then we joined the standerdized addresses together and check to make sure we're matching things properly.
 
-j_balt_full_on_property<-D_liened_properties_bmore_sf_3  %>% 
-  left_join(j_city_state_data_f_3, by = c("pm.addr.full")) %>% filter(is.na(owner)==FALSE) %>% select(-geometry, -id_city,-OBJECTID) %>% 
-  filter(is.na(pm.addr.full.sdat)==FALSE) %>%  distinct %>% filter(is.na(pm.addr.full.sdat)==FALSE)
+j_balt_full_on_property <-
+  D_liened_properties_bmore_sf_3 %>% 
+  left_join(j_city_state_data_f_3,
+            by = c("pm.addr.full")) %>%
+  filter(is.na(owner) == FALSE) %>%
+  select(-geometry, -id_city, -OBJECTID) %>% 
+  filter(is.na(pm.addr.full.sdat) == FALSE) %>%
+  distinct %>%
+  filter(is.na(pm.addr.full.sdat) == FALSE)
 
-j_balt_full_on_property_sf<-D_liened_properties_bmore_sf_3  %>% 
-  left_join(j_city_state_data_f_3, by = c("pm.addr.full")) %>% filter(is.na(owner)==FALSE) %>% select(-id_city,-OBJECTID) %>% 
-  filter(is.na(pm.addr.full.sdat)==FALSE) %>%  distinct %>% filter(is.na(pm.addr.full.sdat)==FALSE) %>% st_as_sf
+j_balt_full_on_property_sf <- 
+  D_liened_properties_bmore_sf_3 %>% 
+  left_join(j_city_state_data_f_3,
+            by = c("pm.addr.full")) %>%
+  filter(is.na(owner) == FALSE) %>%
+  select(-id_city,-OBJECTID) %>% 
+  filter(is.na(pm.addr.full.sdat) == FALSE) %>%
+  distinct %>% 
+  filter(is.na(pm.addr.full.sdat) == FALSE) %>%
+  st_as_sf
 
-j_balt_full_on_property_sf %>% st_as_sf %>% st_write("~/Desktop/banner_projects/real_estate/matched_liens_sdat_2_sf.shp", delete_dsn = T)
+j_balt_full_on_property_sf %>%
+  st_as_sf %>%
+  st_write("~/Desktop/banner_projects/real_estate/matched_liens_sdat_2_sf.shp",
+           delete_dsn = T)
 
-desc_check<-j_balt_full_on_property %>% group_by(id_lien) %>% summarise(n=n()) %>% filter(n>1) %>% arrange(desc(n))
-x_check<-j_balt_full_on_property %>% group_by(id.x) %>% summarise(n=n()) %>% filter(n>1) %>% arrange(desc(n))
+desc_check <-
+  j_balt_full_on_property %>%
+  group_by(id_lien) %>%
+  summarise(n=n()) %>%
+  filter(n>1) %>%
+  arrange(desc(n))
+
+x_check <- 
+  j_balt_full_on_property %>%
+  group_by(id.x) %>%
+  summarise(n=n()) %>%
+  filter(n>1) %>%
+  arrange(desc(n))
 
 # some of these are repeated and that means that the liens showed up more than once for the same property, which is fine.
-y_check<-j_balt_full_on_property %>% group_by(id.y) %>% summarise(n=n()) %>% filter(n>1) %>% arrange(desc(n))
-y_check_new <- y_check %>% filter(n > 3)
+y_check <-
+  j_balt_full_on_property %>%
+  group_by(id.y) %>%
+  summarise(n=n()) %>%
+  filter(n>1) %>%
+  arrange(desc(n))
+
+y_check_new <-
+  y_check %>% filter(n > 3)
 
 # this is how we check to make sure different apartments aren't being matched to the same building. they are not
-j_balt_full_on_property %>% filter(id.y%in%y_check_new$id.y) %>% group_by(property_address, owner) %>% summarise(n = n()) %>%
-  group_by(property_address) %>% summarise(n = n()) %>% arrange(desc(n))
+j_balt_full_on_property %>%
+  filter(id.y%in%y_check_new$id.y) %>%
+  group_by(property_address, owner) %>%
+  summarise(n = n()) %>%
+  group_by(property_address) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n))
 
 #matching it that way, you only miss 3.6k of the original 69k. 
-d_missing<-D_liened_properties_bmore %>% add_column(id_lien = 1:nrow(.))%>% filter(id_lien%in%j_balt_full_on_property$id_lien==FALSE)
+d_missing <-
+  D_liened_properties_bmore %>%
+  add_column(id_lien = 1:nrow(.)) %>%
+  filter(id_lien %in% j_balt_full_on_property$id_lien == FALSE)
 
 ##finding properties we know are repeated.. basically none.
-repeated_properties<-j_balt_full_on_property %>% group_by(id_lien) %>% summarise(n = n()) %>% arrange(desc(n)) %>% filter(n >1)
+repeated_properties <-
+  j_balt_full_on_property %>%
+  group_by(id_lien) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  filter(n >1)
 
-j_balt_full_on_property %>% filter(id_lien%in%repeated_properties$id_lien) %>% group_by(property_address, owner) %>% summarise(n =n()) %>% 
-  group_by(property_address) %>% summarise(n = n()) %>% arrange(desc(n))
+j_balt_full_on_property %>%
+  filter(id_lien%in%repeated_properties$id_lien) %>%
+  group_by(property_address, owner) %>%
+  summarise(n =n()) %>% 
+  group_by(property_address) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n))
 
 #
-j_balt_full_on_property %>% write_csv("~/Desktop/banner_projects/real_estate/matched_liens_sdat_2.csv")
+j_balt_full_on_property %>%
+  write_csv("~/Desktop/banner_projects/real_estate/matched_liens_sdat_2.csv")
 
-write_csv(names(j_balt_full_on_property %>% as.data.frame) %>% as.data.frame(),
-  "~/Desktop/banner_projects/real_estate/complete_prop_sale/names_to_add_1.csv")
+write_csv(names(j_balt_full_on_property %>% as.data.frame) %>%
+            as.data.frame(),
+          "~/Desktop/banner_projects/real_estate/complete_prop_sale/names_to_add_1.csv")
 
-j_balt_full_on_property_sf %>% names %>% as.data.frame %>%  write_csv("~/Desktop/banner_projects/real_estate/liens_names.csv")
+j_balt_full_on_property_sf %>%
+  names %>%
+  as.data.frame %>%
+  write_csv("~/Desktop/banner_projects/real_estate/liens_names.csv")
 
